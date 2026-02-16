@@ -210,33 +210,11 @@ export function useStore() {
     return newOrder;
   }, []);
 
-  return {
-    articles,
-    clients,
-    admin,
-    settings,
-    notifications,
-    orders,
-    addArticle,
-    updateArticle,
-    deleteArticle,
-    publishArticle,
-    registerClient,
-    loginClient,
-    recoverPassword,
-    loginAdmin,
-    changeAdminPassword,
-    getAdminCredentials,
-    updateSettings,
-    markNotificationRead,
-    markAllNotificationsRead,
-    addOrder,
-  };
-  // ... (reste du code inchangé)
+  // ... (après la fonction addOrder)
 
   return {
     articles,
-    fetchArticles, // <-- AJOUTEZ CETTE LIGNE ICI
+    fetchArticles, // Vérifiez que cette ligne est là
     clients,
     admin,
     settings,
@@ -257,4 +235,4 @@ export function useStore() {
     markAllNotificationsRead,
     addOrder,
   };
-}
+} // UNE SEULE ACCOLADE ICI POUR FERMER LA FONCTION useStore
