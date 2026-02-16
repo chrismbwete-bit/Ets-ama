@@ -232,4 +232,30 @@ export function useStore() {
     markAllNotificationsRead,
     addOrder,
   };
+  // ... (reste du code inchangé)
+
+  return {
+    articles,
+    fetchArticles, // <-- AJOUTEZ CETTE LIGNE ICI
+    clients,
+    admin,
+    settings,
+    notifications,
+    orders,
+    addArticle,
+    updateArticle,
+    deleteArticle,
+    publishArticle,
+    registerClient,
+    loginClient,
+    recoverPassword,
+    loginAdmin,
+    changeAdminPassword,
+    getAdminCredentials,
+    updateSettings,
+    markNotificationRead,
+    markAllNotificationsRead,
+    addOrder,
+  };
+}
 }
