@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react'; // useEffect ajouté ici
-import { Search, Filter, X, MapPin, Phone, ShoppingBag, Sparkles, Zap } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Search, Filter, Zap, Sparkles } from 'lucide-react';
 import { useStore } from './store/useStore';
 import { Header } from './components/Header';
 import { ArticleCard } from './components/ArticleCard';
@@ -8,29 +8,27 @@ import { AuthModal } from './components/AuthModal';
 import { OrderModal } from './components/OrderModal';
 import { AdminPanel } from './components/AdminPanel';
 import { NotificationsPanel } from './components/NotificationsPanel';
-import type { Article, Client } from './types';
+import type { Article, Client } from '../types';
 
-const CATEGORIES_FILTER = ['Tous', 'Robes', 'Costumes', 'T-Shirts', 'Jeans', 'Vestes', 'Chaussures', 'Accessoires', 'Sous-vêtements', 'Sport', 'Enfants', 'Autre'];
+const CATEGORIES_FILTER = [
+  'Tous', 'Robes', 'Costumes', 'T-Shirts', 'Jeans', 'Vestes', 'Chaussures',
+  'Accessoires', 'Sous-vêtements', 'Sport', 'Enfants', 'Autre'
+];
 
 export function App() {
   const store = useStore();
 
-  // --- EFFET DE CHARGEMENT INITIAL ---
-  useEffect(() => {
-    // On vérifie si la fonction existe (pour éviter les erreurs au build)
-    // puis on récupère les articles depuis la base de données
-    if (typeof (store as any).fetchArticles === 'function') {
-      (store as any).fetchArticles();
-    }
-  }, []); 
-
+  // --- STATES ---
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentClient, setCurrentClient] = useState<Client | null>(null);
+
   const [showAuth, setShowAuth] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [orderArticle, setOrderArticle] = useState<Article | null>(null);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tous');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -42,7 +40,11 @@ export function App() {
     if (selectedCategory !== 'Tous') filtered = filtered.filter(a => a.category === selectedCategory);
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(a => a.name.toLowerCase().includes(q) || a.description.toLowerCase().includes(q) || a.category.toLowerCase().includes(q));
+      filtered = filtered.filter(a =>
+        a.name.toLowerCase().includes(q) ||
+        a.description.toLowerCase().includes(q) ||
+        a.category.toLowerCase().includes(q)
+      );
     }
     return filtered;
   }, [publishedArticles, selectedCategory, searchQuery]);
@@ -53,6 +55,7 @@ export function App() {
     return counts;
   }, [publishedArticles]);
 
+  // --- AUTH HANDLERS ---
   const handleClientLogin = (phone: string, password: string) => {
     const client = store.loginClient(phone, password);
     if (client) { setCurrentClient(client); setShowAuth(false); return true; }
@@ -74,47 +77,31 @@ export function App() {
 
   const handleLogout = () => { setIsAdmin(false); setCurrentClient(null); setShowAdmin(false); };
 
-  const handleOrder = (article: Article) => { setOrderArticle(article); };
+  // --- ORDER HANDLERS SAFE ---
+  const handleOrder = (article: Article) => {
+    // On ferme le détail d’article avant d’ouvrir la modal de commande
+    setSelectedArticle(null);
+    setTimeout(() => setOrderArticle(article), 50); // ✅ Séparation des updates state
+  };
 
   const handleOrderPlaced = (article: Article) => {
     if (currentClient) {
-      store.addOrder({ clientId: currentClient.id, clientName: `${currentClient.firstName} ${currentClient.lastName}`, clientPhone: currentClient.phone, articleId: article.id, articleName: article.name });
+      store.addOrder({
+        clientId: currentClient.id,
+        clientName: `${currentClient.firstName} ${currentClient.lastName}`,
+        clientPhone: currentClient.phone,
+        articleId: article.id,
+        articleName: article.name
+      });
     }
     setOrderArticle(null);
   };
 
+  // --- RENDER ---
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
-      {/* ===== SCROLLING MARQUEE BANNER ===== */}
-      <div className="bg-gradient-to-r from-purple-900/80 via-pink-900/80 to-cyan-900/80 border-b border-purple-500/20 overflow-hidden">
-        <div className="flex items-center py-2">
-          <div className="animate-marquee whitespace-nowrap flex items-center gap-8">
-            <span className="text-sm font-bold flex items-center gap-2">
-              <Zap className="w-4 h-4 text-yellow-400" />
-              <span className="text-yellow-400">✨</span>
-              <span className="text-cyan-300">Créé par l'informaticien</span>
-              <span className="text-pink-400 font-extrabold text-glow-pink">CHRISTIAN MBWETE</span>
-              <span className="text-purple-300">(+243895180889)</span>
-              <span className="text-yellow-400">✨</span>
-              <Zap className="w-4 h-4 text-yellow-400" />
-            </span>
-            <span className="text-sm font-bold flex items-center gap-2">
-              <span className="text-green-400">💻</span>
-              <span className="text-cyan-300">Développeur d'applications</span>
-              <span className="text-purple-400">•</span>
-              <span className="text-pink-300">Solutions digitales sur mesure</span>
-              <span className="text-green-400">💻</span>
-            </span>
-            {/* Repetition for seamless marquee */}
-            <span className="text-sm font-bold flex items-center gap-2">
-              <Zap className="w-4 h-4 text-yellow-400" />
-              <span className="text-cyan-300">CHRISTIAN MBWETE</span>
-              <Zap className="w-4 h-4 text-yellow-400" />
-            </span>
-          </div>
-        </div>
-      </div>
 
+      {/* HEADER */}
       <Header
         settings={store.settings}
         notifications={store.notifications}
@@ -128,67 +115,56 @@ export function App() {
         onLoginClick={() => setShowAuth(true)}
       />
 
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(168,85,247,0.15),transparent_50%)]" />
-        <div className="relative max-w-7xl mx-auto px-4 py-10 lg:py-16">
-          <div className="text-center max-w-2xl mx-auto">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <Sparkles className="w-5 h-5 text-yellow-400 neon-flicker" />
-              <span className="text-purple-300/70 text-sm font-medium tracking-widest uppercase">Collection Disponible</span>
-              <Sparkles className="w-5 h-5 text-yellow-400 neon-flicker" />
-            </div>
-            <h2 className="text-3xl lg:text-5xl font-extrabold mb-4 leading-tight shimmer-text">
-              {store.settings.name}
-            </h2>
-            <p className="text-purple-300/50 text-lg mb-6">{store.settings.slogan}</p>
+      {/* HERO */}
+      <div className="relative overflow-hidden py-10">
+        <h1 className="text-3xl lg:text-5xl font-extrabold text-center text-purple-300">
+          {store.settings.name}
+        </h1>
+        <p className="text-center text-purple-400">{store.settings.slogan}</p>
 
-            {/* Search bar */}
-            <div className="relative max-w-lg mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-500/50" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Rechercher un article..."
-                className="w-full pl-12 pr-12 py-4 bg-[#12121a] border border-purple-500/20 text-white rounded-2xl outline-none"
-              />
-            </div>
-          </div>
+        <div className="relative max-w-lg mx-auto mt-6">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-500/50" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Rechercher un article..."
+            className="w-full pl-12 pr-12 py-4 bg-[#12121a] border border-purple-500/20 text-white rounded-2xl outline-none"
+          />
         </div>
       </div>
 
-      {/* Articles Grid */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
-          <Filter className="w-5 h-5 text-purple-500/50 flex-shrink-0" />
-          {CATEGORIES_FILTER.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
-                selectedCategory === cat ? 'bg-purple-600 text-white' : 'bg-[#12121a] text-gray-500'
-              }`}
-            >
-              {cat} ({categoryCounts[cat] || 0})
-            </button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {filteredArticles.map(article => (
-            <ArticleCard
-              key={article.id}
-              article={article}
-              settings={store.settings}
-              onOrder={handleOrder}
-              onView={setSelectedArticle}
-            />
-          ))}
-        </div>
+      {/* CATEGORIES */}
+      <div className="flex items-center gap-2 mb-6 overflow-x-auto px-4 scrollbar-hide">
+        <Filter className="w-5 h-5 text-purple-500/50 flex-shrink-0" />
+        {CATEGORIES_FILTER.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+              selectedCategory === cat ? 'bg-purple-600 text-white' : 'bg-[#12121a] text-gray-500'
+            }`}
+          >
+            {cat} ({categoryCounts[cat] || 0})
+          </button>
+        ))}
       </div>
 
-      {/* Modals */}
+      {/* ARTICLES GRID */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 px-4">
+        {filteredArticles.map(article => (
+          <ArticleCard
+            key={article.id} // ✅ Clé stable
+            article={article}
+            settings={store.settings}
+            onOrder={handleOrder}
+            onView={setSelectedArticle}
+          />
+        ))}
+      </div>
+
+      {/* ===== MODALS ===== */}
+
       {showAuth && (
         <AuthModal
           onClose={() => setShowAuth(false)}
@@ -205,7 +181,7 @@ export function App() {
           article={selectedArticle}
           settings={store.settings}
           onClose={() => setSelectedArticle(null)}
-          onOrder={(article) => { setSelectedArticle(null); handleOrder(article); }}
+          onOrder={handleOrder}
         />
       )}
 
@@ -244,6 +220,7 @@ export function App() {
           onMarkAllRead={store.markAllNotificationsRead}
         />
       )}
+
     </div>
   );
 }
