@@ -21,17 +21,12 @@ const DEFAULT_ADMIN: Admin = {
 };
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
-  try {
-    const stored = localStorage.getItem(key);
-    if (stored) return JSON.parse(stored);
-  } catch {}
+  try { const stored = localStorage.getItem(key); if (stored) return JSON.parse(stored); } catch {}
   return defaultValue;
 }
 
 function saveToStorage<T>(key: string, value: T) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 }
 
 export function useStore() {
@@ -42,48 +37,36 @@ export function useStore() {
   const [notifications, setNotifications] = useState<Notification[]>(() => loadFromStorage('boutique_notifications', []));
   const [orders, setOrders] = useState<Order[]>(() => loadFromStorage('boutique_orders', []));
 
-  // --- FETCH ARTICLES ---
+  // FETCH ARTICLES
   const fetchArticles = useCallback(async () => {
     const { data, error } = await supabase
       .from('articles')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('createdAt', { ascending: false });
 
-    if (!error && data) {
-      setArticles(data as Article[]);
-    } else if (error) {
-      console.error("Erreur fetchArticles:", error);
-    }
+    if (!error && data) setArticles(data as Article[]);
+    else if (error) console.error('Erreur fetchArticles:', error);
   }, []);
 
-  useEffect(() => {
-    fetchArticles();
-  }, [fetchArticles]);
+  useEffect(() => { fetchArticles(); }, [fetchArticles]);
 
-  // --- ADD ARTICLE ---
-  const addArticle = useCallback(async (article: Omit<Article, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      const newArticleData = {
-        ...article,
-        sizes: JSON.stringify(article.sizes),
-        colors: JSON.stringify(article.colors),
-        images: JSON.stringify(article.images),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+  // ADD ARTICLE
+  const addArticle = useCallback(async (article: Omit<Article, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newArticleData = {
+      ...article,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-      const { data, error } = await supabase
-        .from('articles')
-        .insert([newArticleData])
-        .select('*');
+    const { data, error } = await supabase
+      .from('articles')
+      .insert([newArticleData])
+      .select();
 
-      if (error) throw error;
-
+    if (!error && data) {
       const savedArticle = data[0] as Article;
       setArticles(prev => [savedArticle, ...prev]);
-
-      // Notification si publié
-      if (savedArticle.published) {
+      if (article.published) {
         const notif: Notification = {
           id: Date.now().toString(),
           articleId: savedArticle.id,
@@ -93,103 +76,63 @@ export function useStore() {
           read: false,
         };
         setNotifications(prev => {
-          const updated = [notif, ...prev];
-          saveToStorage('boutique_notifications', updated);
-          return updated;
+          const updated = [notif, ...prev]; saveToStorage('boutique_notifications', updated); return updated;
         });
       }
-
       return savedArticle;
-    } catch (err) {
-      console.error("Erreur addArticle:", err);
-      return null;
     }
+    console.error('Erreur addArticle:', error);
+    return null;
   }, []);
 
-  // --- UPDATE ARTICLE ---
   const updateArticle = useCallback(async (id: string, data: Partial<Article>) => {
-    try {
-      const updateData: any = { ...data, updated_at: new Date().toISOString() };
-      if (updateData.sizes) updateData.sizes = JSON.stringify(updateData.sizes);
-      if (updateData.colors) updateData.colors = JSON.stringify(updateData.colors);
-      if (updateData.images) updateData.images = JSON.stringify(updateData.images);
-
-      const { error } = await supabase
-        .from('articles')
-        .update(updateData)
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setArticles(prev => prev.map(a => a.id === id ? { ...a, ...data } : a));
-    } catch (err) {
-      console.error("Erreur updateArticle:", err);
-    }
+    const updateData = { ...data, updatedAt: new Date().toISOString() };
+    const { error } = await supabase.from('articles').update(updateData).eq('id', id);
+    if (!error) setArticles(prev => prev.map(a => a.id === id ? { ...a, ...updateData } : a));
   }, []);
 
-  // --- DELETE ARTICLE ---
   const deleteArticle = useCallback(async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('articles')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      setArticles(prev => prev.filter(a => a.id !== id));
-    } catch (err) {
-      console.error("Erreur deleteArticle:", err);
-    }
+    const { error } = await supabase.from('articles').delete().eq('id', id);
+    if (!error) setArticles(prev => prev.filter(a => a.id !== id));
   }, []);
 
-  // --- PUBLISH ARTICLE ---
   const publishArticle = useCallback(async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('articles')
-        .update({ published: true, updated_at: new Date().toISOString() })
-        .eq('id', id);
+    const updateData = { published: true, updatedAt: new Date().toISOString() };
+    const { error } = await supabase.from('articles').update(updateData).eq('id', id);
+    if (!error) setArticles(prev => prev.map(a => a.id === id ? { ...a, ...updateData } : a));
+  }, []);
 
-      if (error) throw error;
+  // CLIENT / ADMIN / ORDERS
+  const registerClient = useCallback((data: Omit<Client, 'id' | 'createdAt'>) => {
+    if (clients.find(c => c.phone === data.phone)) return null;
+    const newClient: Client = { ...data, id: Date.now().toString(), createdAt: new Date().toISOString() };
+    setClients(prev => { const updated = [...prev, newClient]; saveToStorage('boutique_clients', updated); return updated; });
+    return newClient;
+  }, [clients]);
 
-      setArticles(prev => prev.map(a => a.id === id ? { ...a, published: true } : a));
-
-      const article = articles.find(a => a.id === id);
-      if (article) {
-        const notif: Notification = {
-          id: Date.now().toString(),
-          articleId: article.id,
-          articleName: article.name,
-          message: `🆕 Nouvel article publié: ${article.name}`,
-          createdAt: new Date().toISOString(),
-          read: false,
-        };
-        setNotifications(prev => {
-          const updated = [notif, ...prev];
-          saveToStorage('boutique_notifications', updated);
-          return updated;
-        });
-      }
-    } catch (err) {
-      console.error("Erreur publishArticle:", err);
-    }
-  }, [articles]);
-
-  // --- RESTE DES FONCTIONS (clients, admin, orders, notifications) ---
-  // [Conserver exactement celles déjà existantes]
+  const loginClient = useCallback((phone: string, password: string) => clients.find(c => c.phone === phone && c.password === password) || null, [clients]);
+  const recoverPassword = useCallback((phone: string) => clients.find(c => c.phone === phone)?.password || null, [clients]);
+  const loginAdmin = useCallback((username: string, password: string) => admin.username === username && admin.password === password, [admin]);
+  const getAdminCredentials = useCallback(() => ({ username: admin.username, password: admin.password }), [admin]);
+  const changeAdminPassword = useCallback((currentPassword: string, newPassword: string) => {
+    if (admin.password !== currentPassword) return false;
+    setAdmin(prev => { const updated = { ...prev, password: newPassword }; saveToStorage('boutique_admin', updated); return updated; });
+    return true;
+  }, [admin]);
+  const updateSettings = useCallback((data: Partial<BoutiqueSettings>) => { setSettings(prev => { const updated = { ...prev, ...data }; saveToStorage('boutique_settings', updated); return updated; }); }, []);
+  const markNotificationRead = useCallback((id: string) => { setNotifications(prev => { const updated = prev.map(n => n.id === id ? { ...n, read: true } : n); saveToStorage('boutique_notifications', updated); return updated; }); }, []);
+  const markAllNotificationsRead = useCallback(() => { setNotifications(prev => { const updated = prev.map(n => ({ ...n, read: true })); saveToStorage('boutique_notifications', updated); return updated; }); }, []);
+  const addOrder = useCallback((order: Omit<Order, 'id' | 'createdAt' | 'status'>) => {
+    const newOrder: Order = { ...order, id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString() };
+    setOrders(prev => { const updated = [newOrder, ...prev]; saveToStorage('boutique_orders', updated); return updated; });
+    return newOrder;
+  }, []);
 
   return {
-    articles,
-    fetchArticles,
-    clients,
-    admin,
-    settings,
-    notifications,
-    orders,
-    addArticle,
-    updateArticle,
-    deleteArticle,
-    publishArticle,
-    // ...reste functions
+    articles, fetchArticles, clients, admin, settings, notifications, orders,
+    addArticle, updateArticle, deleteArticle, publishArticle,
+    registerClient, loginClient, recoverPassword,
+    loginAdmin, changeAdminPassword, getAdminCredentials,
+    updateSettings, markNotificationRead, markAllNotificationsRead, addOrder
   };
 }
