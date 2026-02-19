@@ -1,22 +1,31 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import type { Request, Response } from 'express'; // pas besoin de @vercel/node
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).send('Method not allowed');
+export default async function handler(req: Request, res: Response) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Méthode non autorisée' });
+  }
 
-  const { client_id, article_id, quantity } = req.body;
+  const { articleId, userId, quantity } = req.body;
 
-  const { data, error } = await supabase
-    .from('orders')
-    .insert({ client_id, article_id, quantity })
-    .select();
+  try {
+    const { data, error } = await supabase.from('orders').insert({
+      article_id: articleId,
+      user_id: userId,
+      quantity,
+      status: 'pending',
+      created_at: new Date()
+    });
 
-  if (error) return res.status(500).json({ error });
+    if (error) throw error;
 
-  res.status(200).json({ message: 'Commande créée !', order: data[0] });
+    res.status(200).json({ success: true, order: data });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 }
