@@ -1,5 +1,5 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import type { IncomingMessage, ServerResponse } from 'http';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
@@ -7,21 +7,26 @@ const supabase = createClient(
 );
 
 export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
+  req: IncomingMessage,
+  res: ServerResponse
 ) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    res.statusCode = 405;
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
   }
 
   const { error } = await supabase
     .from('articles')
     .delete()
-    .neq('id', '0'); // supprime tout
+    .neq('id', '0');
 
   if (error) {
-    return res.status(500).json({ error: error.message });
+    res.statusCode = 500;
+    res.end(JSON.stringify({ error: error.message }));
+    return;
   }
 
-  return res.status(200).json({ success: true });
+  res.statusCode = 200;
+  res.end(JSON.stringify({ success: true }));
 }
