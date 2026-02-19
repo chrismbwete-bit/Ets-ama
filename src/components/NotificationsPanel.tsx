@@ -1,8 +1,3 @@
-import { Toaster } from 'react-hot-toast';
-
-export default function NotificationToast() {
-  return <Toaster position="top-right" reverseOrder={false} />;
-}
 import { X, Bell, CheckCheck } from 'lucide-react';
 import type { Notification } from '../types';
 
