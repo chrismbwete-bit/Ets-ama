@@ -484,6 +484,32 @@ export function AdminPanel({
               <button onClick={handleSaveSettings} className="w-full flex items-center justify-center gap-2 py-3 btn-neon-green text-white rounded-xl font-bold">
                 <Save className="w-5 h-5" /> ✨ Enregistrer
               </button>
+              {/* ⚠️ ZONE DANGEREUSE */}
+<div className="mt-8 p-4 rounded-xl border border-red-500/30 bg-red-500/5">
+  <h3 className="text-red-400 font-bold mb-3">⚠️ Zone dangereuse</h3>
+  <p className="text-sm text-red-300 mb-4">
+    Cette action supprimera définitivement tous les articles du catalogue.
+  </p>
+
+  <button
+    onClick={async () => {
+      const ok = confirm("⚠️ ATTENTION : Supprimer tout le catalogue ?");
+      if (!ok) return;
+
+      try {
+        await fetch('/api/delete-catalog', { method: 'POST' });
+        alert("✅ Catalogue supprimé avec succès");
+        location.reload();
+      } catch (e) {
+        console.error(e);
+        alert("❌ Erreur lors de la suppression");
+      }
+    }}
+    className="w-full flex items-center justify-center gap-2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition"
+  >
+    🗑️ Supprimer tout le catalogue
+  </button>
+  </div>
             </div>
           </div>
         )}
