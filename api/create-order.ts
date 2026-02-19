@@ -1,12 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Request, Response } from 'express'; // pas besoin de @vercel/node
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
   process.env.VITE_SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export default async function handler(req: Request, res: Response) {
+export default async function handler(req: { method: string; body: any }, res: { status: (code: number) => { json: (data: any) => void } }) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Méthode non autorisée' });
   }
