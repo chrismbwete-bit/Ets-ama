@@ -50,11 +50,7 @@ export function NotificationsPanel({ notifications, onClose, onMarkRead, onMarkA
               <div
                 key={notif.id}
                 onClick={() => onMarkRead(notif.id)}
-                className={`p-4 rounded-xl border cursor-pointer transition ${
-                  notif.read
-                    ? 'bg-[#12121a] border-purple-500/10'
-                    : 'bg-purple-500/5 border-purple-500/20 shadow-[0_0_10px_rgba(168,85,247,0.1)]'
-                }`}
+                className={`p-4 rounded-xl border cursor-pointer transition ${notif.read ? 'bg-[#12121a] border-purple-500/10' : 'bg-purple-500/5 border-purple-500/20 shadow-[0_0_10px_rgba(168,85,247,0.1)]'}`}
               >
                 <div className="flex items-start gap-3">
                   {!notif.read && (
@@ -62,12 +58,10 @@ export function NotificationsPanel({ notifications, onClose, onMarkRead, onMarkA
                   )}
                   <div className="flex-1">
                     <p className={`text-sm ${notif.read ? 'text-gray-400' : 'text-gray-200 font-medium'}`}>
-                      {notif.message ?? 'Notification'}
+                      {notif.message}
                     </p>
                     <p className="text-xs text-gray-600 mt-1">
-                      {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString('fr-FR', {
-                        day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
-                      }) : ''}
+                      {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
                     </p>
                   </div>
                 </div>
