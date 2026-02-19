@@ -1,0 +1,45 @@
+import { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
+import axios from 'axios';
+
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).send('Method not allowed');
+
+  const { name, price, boutique_id } = req.body;
+
+  const { data, error } = await supabase
+    .from('articles')
+    .insert({ name, price, boutique_id })
+    .select();
+
+  if (error) return res.status(500).json({ error });
+
+  // Ajouter notification realtime
+  await supabase.from('notifications').insert({ message: `Nouvel article: ${name}` });
+
+  // Envoi WhatsApp
+  const clients = await supabase.from('clients').select('phone');
+  for (let client of clients.data) {
+    await axios.post(
+      `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_SID}/Messages.json`,
+      new URLSearchParams({
+        To: `whatsapp:${client.phone}`,
+        From: process.env.TWILIO_WHATSAPP_FROM!,
+        Body: `Nouveau article disponible: ${name}`
+      }),
+      {
+        auth: {
+          username: process.env.TWILIO_SID!,
+          password: process.env.TWILIO_TOKEN!
+        }
+      }
+    );
+  }
+
+  res.status(200).json({ message: 'Article ajouté !', article: data[0] });
+}
