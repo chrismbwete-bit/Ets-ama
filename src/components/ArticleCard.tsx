@@ -8,7 +8,7 @@ interface ArticleCardProps {
   onView: (article: Article) => void;
 }
 
-export function ArticleCard({ article, settings, onOrder, onView }: ArticleCardProps) {
+export default function ArticleCard({ article, settings, onOrder, onView }: ArticleCardProps) {
   return (
     <div className="card-dark rounded-2xl overflow-hidden group">
       <div className="relative overflow-hidden">
@@ -16,7 +16,7 @@ export function ArticleCard({ article, settings, onOrder, onView }: ArticleCardP
           {article.images?.[0] ? (
             <img
               src={article.images[0]}
-              alt={article.name}
+              alt={article.name ?? 'Article'}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-90 group-hover:opacity-100"
               onError={(e) => {
                 (e.target as HTMLImageElement).src =
@@ -30,12 +30,11 @@ export function ArticleCard({ article, settings, onOrder, onView }: ArticleCardP
           )}
         </div>
 
-        {article.stock !== undefined && article.stock <= 5 && article.stock > 0 && (
+        {article.stock != null && article.stock <= 5 && article.stock > 0 && (
           <span className="absolute top-3 left-3 bg-orange-500/90 text-white text-xs px-2 py-1 rounded-full font-medium shadow-[0_0_10px_rgba(249,115,22,0.5)]">
             ⚡ Plus que {article.stock} !
           </span>
         )}
-
         {article.stock === 0 && (
           <span className="absolute top-3 left-3 bg-red-500/90 text-white text-xs px-2 py-1 rounded-full font-medium shadow-[0_0_10px_rgba(239,68,68,0.5)]">
             ❌ Épuisé
@@ -43,17 +42,13 @@ export function ArticleCard({ article, settings, onOrder, onView }: ArticleCardP
         )}
 
         <div className="absolute top-3 right-3 bg-purple-600/80 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full font-medium shadow-[0_0_10px_rgba(168,85,247,0.4)]">
-          {article.category || 'Autre'}
+          {article.category ?? 'Autre'}
         </div>
       </div>
 
       <div className="p-4 space-y-3">
-        <h3 className="font-bold text-white text-lg leading-tight line-clamp-2">
-          {article.name || 'Nom inconnu'}
-        </h3>
-        <p className="text-gray-400 text-sm line-clamp-2">
-          {article.description || 'Pas de description'}
-        </p>
+        <h3 className="font-bold text-white text-lg leading-tight line-clamp-2">{article.name ?? 'Sans nom'}</h3>
+        <p className="text-gray-400 text-sm line-clamp-2">{article.description ?? ''}</p>
 
         <div className="flex flex-wrap gap-1">
           {article.sizes?.slice(0, 4).map(size => (
@@ -80,10 +75,10 @@ export function ArticleCard({ article, settings, onOrder, onView }: ArticleCardP
           <div className="flex items-center justify-between">
             <div>
               <p className="font-bold text-purple-400 text-lg text-glow-purple">
-                {article.priceFC?.toLocaleString() ?? '0'} {settings.currencyFC}
+                {(article.priceFC ?? 0).toLocaleString()} {settings.currencyFC}
               </p>
               <p className="text-cyan-400/70 text-sm">
-                {article.priceUSD?.toLocaleString() ?? '0'} {settings.currencyUSD}
+                {(article.priceUSD ?? 0).toLocaleString()} {settings.currencyUSD}
               </p>
             </div>
           </div>
