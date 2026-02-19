@@ -62,12 +62,12 @@ export function NotificationsPanel({ notifications, onClose, onMarkRead, onMarkA
                   )}
                   <div className="flex-1">
                     <p className={`text-sm ${notif.read ? 'text-gray-400' : 'text-gray-200 font-medium'}`}>
-                      {notif.message}
+                      {notif.message ?? 'Notification'}
                     </p>
                     <p className="text-xs text-gray-600 mt-1">
-                      {new Date(notif.createdAt).toLocaleDateString('fr-FR', {
+                      {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString('fr-FR', {
                         day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
-                      })}
+                      }) : ''}
                     </p>
                   </div>
                 </div>
